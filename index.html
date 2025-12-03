@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BoostMe - AI Productivity Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                DEFAULT: '#7C83FF', // --color-primary
+                50: '#F5F6FF',
+                100: '#E3E5FF', // --color-primary-soft
+                200: '#C7CCFF',
+                300: '#AAB3FF',
+                400: '#8E99FF',
+                500: '#7C83FF',
+                600: '#6A70EB',
+                700: '#585DD7',
+                800: '#464AC3',
+                900: '#3437AF',
+              },
+              accent: {
+                DEFAULT: '#FF9FB6', // --color-accent
+                50: '#FFF0F5',
+                100: '#FFE1E8',
+                200: '#FFC2D1',
+                300: '#FFA3BB',
+                400: '#FF9FB6',
+                500: '#FF809E',
+                600: '#FF6186',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        /* พื้นฐานโทนอบอุ่น + อารมณ์สนับสนุน */
+        --color-bg: #F7F5FB;
+        --color-surface: #FFFFFF;
+        --color-primary: #7C83FF;
+        --color-primary-soft: #E3E5FF;
+        --color-accent: #FF9FB6;
+        --color-text-main: #1E1E2A;
+        --color-text-muted: #6B6B7A;
+        --color-success: #57C690;
+        --color-warning: #FFC970;
+        --color-danger: #FF6B6B;
+
+        /* Constants */
+        --radius-pill: 999px;
+        --radius-card: 18px;
+        --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.06);
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        color: var(--color-text-main);
+        /* Custom background gradient */
+        background: radial-gradient(circle at top, #FDF7FF 0, var(--color-bg) 45%, #EFEFFD 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+      }
+
+      /* Custom scrollbar for chat */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Navigation Tabs */
+      .nav-tabs {
+        display: flex;
+        justify-content: space-around;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        border-top: 1px solid rgba(0,0,0,0.05);
+      }
+
+      .tab-button {
+        flex: 1;
+        padding: 8px 6px;
+        border: none;
+        background: transparent;
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-button.active {
+        background: var(--color-primary-soft);
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      /* Content Areas */
+      .tab-content {
+        padding: 16px;
+      }
+
+      .card {
+        background: var(--color-surface);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-soft);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      /* Primary Button */
+      .primary-button {
+        width: 100%;
+        padding: 10px 16px;
+        border-radius: var(--radius-pill);
+        border: none;
+        background: var(--color-primary);
+        color: #FFFFFF;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(124, 131, 255, 0.35);
+        transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .primary-button:hover {
+        background: #6B73FF;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(124, 131, 255, 0.45);
+      }
+
+      .primary-button:active {
+        transform: translateY(0);
+        box-shadow: 0 6px 16px rgba(124, 131, 255, 0.25);
+      }
+
+      .primary-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+
+      /* Chat Bubbles */
+      .chat-bubble {
+        padding: 8px 12px;
+        border-radius: 16px;
+        margin-bottom: 8px;
+        max-width: 80%;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      }
+
+      .chat-bubble.user {
+        background: linear-gradient(135deg, var(--color-primary) 0%, #A28BFF 100%);
+        color: #FFFFFF;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+
+      .chat-bubble.ai {
+        background: #FFFFFF;
+        color: var(--color-text-main);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        border: 1px solid rgba(124, 131, 255, 0.12);
+      }
+
+      /* App Greeting */
+      .app-greeting {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--color-text-main);
+      }
+
+      .app-greeting span {
+        background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+        -webkit-background-clip: text;
+        color: transparent;
+      }
+
+      /* Profile & Reminder Utils */
+      .section-divider {
+        border: 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        margin: 16px 0;
+      }
+      
+      .text-muted {
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+      }
+
+      .reminder-settings {
+        margin-top: 8px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(124, 131, 255, 0.04);
+      }
+
+      .reminder-row {
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .reminder-row label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .reminder-label {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+
+      .reminder-row input[type="time"],
+      .reminder-row select {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.1);
+        background-color: #FFFFFF;
+        font-size: 0.95rem;
+        width: 100%;
+        outline: none;
+      }
+
+      .reminder-row input[type="time"]:focus,
+      .reminder-row select:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px var(--color-primary-soft);
+      }
+
+      .reminder-status {
+        margin-top: 6px;
+        font-size: 0.8rem;
+        text-align: center;
+        min-height: 1.25em;
+      }
+
+      /* =========================
+         Mascot base layout
+         ========================= */
+
+      .mascot-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .mascot {
+        width: 80px;
+        height: 80px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-soft);
+        background: linear-gradient(145deg, #fef9ff, #e9e7ff);
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .mascot-face {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #ffffff;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      }
+
+      /* Eyes */
+      .mascot-eyes {
+        position: absolute;
+        top: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .eye {
+        width: 8px;
+        height: 10px;
+        background: #1e1e2a;
+        border-radius: 50%;
+      }
+
+      /* Mouth */
+      .mascot-mouth {
+        position: absolute;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        width: 28px;
+        height: 14px;
+        border-radius: 0 0 20px 20px;
+        border-bottom: 3px solid #1e1e2a;
+      }
+
+      /* cheeks */
+      .mascot-cheeks {
+        position: absolute;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        width: 48px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .cheek {
+        width: 8px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255, 159, 182, 0.4);
+      }
+
+      /* speech bubble */
+      .mascot-bubble {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: var(--shadow-soft);
+        font-size: 0.9rem;
+        color: var(--color-text-main);
+        position: relative;
+      }
+
+      .mascot-bubble::before {
+        content: "";
+        position: absolute;
+        left: -10px;
+        top: 20px;
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-right: 10px solid #ffffff;
+      }
+
+      /* =========================
+         Animations
+         ========================= */
+
+      /* หายใจเบา ๆ (ใช้ตอนปกติ) */
+      @keyframes mascot-breathe {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+        100% { transform: translateY(0); }
+      }
+
+      /* เด้งดีใจ (ใช้ตอนมั่นใจสูง) */
+      @keyframes mascot-bounce {
+        0%   { transform: translateY(0); }
+        30%  { transform: translateY(-6px); }
+        60%  { transform: translateY(0); }
+        80%  { transform: translateY(-3px); }
+        100% { transform: translateY(0); }
+      }
+
+      /* สั่นกังวล (ใช้ตอนมั่นใจต่ำ) */
+      @keyframes mascot-shake {
+        0%   { transform: translateX(0); }
+        20%  { transform: translateX(-2px); }
+        40%  { transform: translateX(2px); }
+        60%  { transform: translateX(-2px); }
+        80%  { transform: translateX(2px); }
+        100% { transform: translateX(0); }
+      }
+
+      /* =========================
+         Mood states
+         ========================= */
+
+      /* ปกติ */
+      .mascot-neutral .mascot-face {
+        background: #ffffff;
+      }
+      .mascot-neutral {
+        animation: mascot-breathe 3s ease-in-out infinite;
+      }
+
+      /* Happy / self-confident */
+      .mascot-happy .mascot-face {
+        background: #fffdf7;
+      }
+      .mascot-happy .mascot-mouth {
+        height: 18px;
+        border-bottom-width: 4px;
+        border-radius: 0 0 24px 24px;
+      }
+      .mascot-happy .cheek {
+        background: rgba(255, 159, 182, 0.7);
+      }
+      .mascot-happy {
+        animation: mascot-bounce 0.7s ease-out;
+      }
+
+      /* Super confident */
+      .mascot-proud .mascot-face {
+        background: #fffaf0;
+        box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.15);
+      }
+      .mascot-proud .mascot-mouth {
+        height: 10px;
+        border-bottom: 3px solid #1e1e2a;
+        border-radius: 0 0 18px 18px;
+      }
+      .mascot-proud .eye {
+        height: 4px;
+        border-radius: 999px;
+      }
+      .mascot-proud {
+        animation: mascot-bounce 0.9s ease-out;
+      }
+
+      /* Low confidence / sad */
+      .mascot-low .mascot-face {
+        background: #f5f2ff;
+      }
+      .mascot-low .mascot-mouth {
+        height: 14px;
+        border-bottom: none;
+        border-top: 3px solid #1e1e2a;
+        border-radius: 20px 20px 0 0;
+        bottom: 14px;
+      }
+      .mascot-low .eye {
+        height: 10px;
+        width: 6px;
+      }
+      .mascot-low {
+        animation: mascot-shake 0.45s ease-out;
+      }
+
+      /* Worried / anxious */
+      .mascot-worried .mascot-face {
+        background: #fdf6ff;
+      }
+      .mascot-worried .mascot-mouth {
+        width: 18px;
+        height: 6px;
+        border-radius: 999px;
+      }
+      .mascot-worried .eye {
+        height: 10px;
+      }
+      .mascot-worried {
+        animation: mascot-shake 0.45s ease-out;
+      }
+
+      /* เพิ่ม transition เล็กน้อยเวลาเปลี่ยน mood */
+      .mascot,
+      .mascot-face,
+      .mascot-mouth,
+      .mascot-cheeks .cheek {
+        transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+
+      /* =========================
+         Slider Customization
+         ========================= */
+      
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      #checkin-score-slider {
+        flex: 1;
+        appearance: none;
+        height: 6px;
+        border-radius: 999px;
+        background: #E3E5FF;
+        outline: none;
+      }
+
+      /* แถบด้านใน (track) */
+      #checkin-score-slider::-webkit-slider-runnable-track {
+        height: 6px;
+        border-radius: 999px;
+        background: #E3E5FF;
+      }
+      #checkin-score-slider::-moz-range-track {
+        height: 6px;
+        border-radius: 999px;
+        background: #E3E5FF;
+      }
+
+      /* หัว slider (thumb) */
+      #checkin-score-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        box-shadow: 0 0 0 4px rgba(124, 131, 255, 0.25);
+        margin-top: -6px; /* ให้หัวมาอยู่กลาง track */
+      }
+      #checkin-score-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        box-shadow: 0 0 0 4px rgba(124, 131, 255, 0.25);
+        border: none;
+      }
+
+      .slider-value {
+        width: 42px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "express": "https://aistudiocdn.com/express@^5.2.1",
+    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
